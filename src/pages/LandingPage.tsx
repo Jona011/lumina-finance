@@ -130,6 +130,33 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="py-24 px-6 border-t border-border/50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto mb-10">Start free. Upgrade when you need the full power of AI financial intelligence.</p>
+          <div className="grid md:grid-cols-3 gap-6 text-left">
+            {[
+              { name: 'Free', price: '$0', features: ['1 spreadsheet', 'Partial analysis', 'Limited insights'] },
+              { name: 'Pro', price: '$29/mo', features: ['Unlimited uploads', 'Full AI copilot', 'Forecasting', 'Reports & exports'], highlight: true },
+              { name: 'Business', price: '$79/mo', features: ['Everything in Pro', 'Team workspace', 'Priority support'] },
+            ].map(plan => (
+              <div key={plan.name} className={`glass-card p-6 ${plan.highlight ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
+                <h3 className="font-semibold mb-1">{plan.name}</h3>
+                <p className="text-2xl font-extrabold mb-4">{plan.price}</p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {plan.features.map(f => <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-accent" /> {f}</li>)}
+                </ul>
+                <button onClick={() => navigate(plan.highlight ? '/auth' : '/pricing')}
+                  className={`w-full mt-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${plan.highlight ? 'bg-primary text-primary-foreground hover:brightness-110' : 'bg-secondary text-foreground hover:bg-secondary/80'}`}>
+                  {plan.highlight ? 'Get Started' : 'Learn More'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Security */}
       <section id="security" className="py-24 px-6 border-t border-border/50">
         <div className="max-w-4xl mx-auto text-center">
