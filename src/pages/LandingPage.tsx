@@ -63,16 +63,16 @@ export default function LandingPage() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}
             className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => navigate('/upload')}
+              onClick={() => navigate('/auth')}
               className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base flex items-center gap-2 hover:brightness-110 transition-all glow-primary"
             >
-              <Upload className="w-5 h-5" /> Upload Financial Data
+              <Upload className="w-5 h-5" /> Start Free Analysis
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/pricing')}
               className="px-8 py-3.5 rounded-xl bg-secondary text-secondary-foreground font-semibold text-base flex items-center gap-2 hover:bg-secondary/80 transition-all border border-border"
             >
-              Try the Demo <ArrowRight className="w-4 h-4" />
+              View Pricing <ArrowRight className="w-4 h-4" />
             </button>
           </motion.div>
         </div>
