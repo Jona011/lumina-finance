@@ -3,38 +3,28 @@ import { motion } from 'framer-motion';
 import { Send, Brain, User } from 'lucide-react';
 import PremiumGate from '@/components/PremiumGate';
 import { useAuth } from '@/context/AuthContext';
+import { useFinancial } from '@/context/FinancialContext';
 import UpgradeModal from '@/components/UpgradeModal';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-const sampleResponses: Record<string, string> = {
-  'default': "Based on your uploaded financial data, I can see several key trends. Revenue has been growing steadily at approximately 12% month-over-month, while expenses have remained relatively stable. Your strongest performing month was June with $67,000 in revenue.\n\nWould you like me to dive deeper into any specific area?",
-  'expense': "Looking at your expense data, **Marketing** is your largest cost center at 32% of total expenses ($156,000), followed by Operations at 23% and Payroll at 20%.\n\n**Key observation:** Marketing spend increased 45% in the last 2 weeks compared to the 3-month average. I recommend reviewing campaign ROI to ensure this increased investment is generating proportional returns.",
-  'profit': "Your net profit has shown a strong upward trend over the past 6 months:\n\n- **Best month:** June at $27,000 (40% margin)\n- **Growth rate:** 22.7% increase from last month\n- **Trend:** Consistent improvement since January\n\nHowever, if expense volatility continues to increase at the current rate, margin compression could occur within 60 days. I recommend implementing budget caps for variable cost categories.",
-  'cash': "Based on current revenue and expense trajectories, your cash flow position is **healthy** with low risk of depletion in the next 90 days.\n\n**Projected cash flow:**\n- 30 days: +$28,500 (strong)\n- 60 days: +$25,200 (moderate)\n- 90 days: +$22,000 (adequate)\n\nThe slight decline is driven by increasing operational costs. Consider tightening payment terms with late-paying clients to improve collection timing.",
-};
-
-function getResponse(msg: string): string {
-  const lower = msg.toLowerCase();
-  if (lower.includes('expense') || lower.includes('cost') || lower.includes('category')) return sampleResponses['expense'];
-  if (lower.includes('profit') || lower.includes('margin') || lower.includes('profitable')) return sampleResponses['profit'];
-  if (lower.includes('cash') || lower.includes('runway') || lower.includes('run out')) return sampleResponses['cash'];
-  return sampleResponses['default'];
-}
-
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`;
 const FREE_MESSAGE_LIMIT = 3;
 
 export default function CopilotPage() {
   const { user } = useAuth();
+  const { kpi, monthlyData, categoryBreakdown, insights } = useFinancial();
   const isPremium = user?.plan === 'pro' || user?.plan === 'business';
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hello! I'm your AI financial copilot. I've analyzed your uploaded data and I'm ready to answer any questions about your business finances. Try asking me about expenses, revenue trends, or cash flow projections." },
   ]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const userMessageCount = messages.filter(m => m.role === 'user').length;
@@ -43,21 +33,116 @@ export default function CopilotPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!input.trim() || isTyping) return;
+  // Build financial context string for the AI
+  const financialContext = `
+Revenue: $${kpi.revenue.value.toLocaleString()} (${kpi.revenue.change > 0 ? '+' : ''}${kpi.revenue.change}% change)
+Expenses: $${kpi.expenses.value.toLocaleString()} (${kpi.expenses.change > 0 ? '+' : ''}${kpi.expenses.change}% change)
+Profit: $${kpi.profit.value.toLocaleString()} (${kpi.profit.change > 0 ? '+' : ''}${kpi.profit.change}% change)
+Health Score: ${kpi.healthScore.value}/100
+
+Monthly Data: ${JSON.stringify(monthlyData.slice(-6))}
+
+Top Expense Categories: ${categoryBreakdown.map(c => `${c.name}: $${c.value.toLocaleString()} (${c.percentage}%)`).join(', ')}
+
+Key Insights: ${insights.map(i => i.title + ': ' + i.description).join('; ')}
+  `.trim();
+
+  const sendMessage = async () => {
+    if (!input.trim() || isStreaming) return;
     if (!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT) {
       setShowUpgrade(true);
       return;
     }
+
     const userMsg = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setIsTyping(true);
+    const newMessages: Message[] = [...messages, { role: 'user', content: userMsg }];
+    setMessages(newMessages);
+    setIsStreaming(true);
 
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: getResponse(userMsg) }]);
-      setIsTyping(false);
-    }, 1200);
+    let assistantContent = '';
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          financialContext,
+        }),
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        if (resp.status === 429) {
+          toast.error('Rate limit exceeded. Please wait a moment and try again.');
+        } else if (resp.status === 402) {
+          toast.error('AI usage limit reached. Please add credits.');
+        } else {
+          toast.error(errData.error || 'AI service error');
+        }
+        setIsStreaming(false);
+        return;
+      }
+
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error('No stream');
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant' && prev.length > 1) {
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+                }
+                return [...prev, { role: 'assistant', content: assistantContent }];
+              });
+            }
+          } catch {
+            buffer = line + '\n' + buffer;
+            break;
+          }
+        }
+      }
+
+      // Save messages to DB
+      if (user) {
+        await supabase.from('chat_messages').insert([
+          { user_id: user.id, role: 'user', content: userMsg },
+          { user_id: user.id, role: 'assistant', content: assistantContent },
+        ]);
+      }
+    } catch (e) {
+      console.error('Stream error:', e);
+      toast.error('Failed to get AI response. Please try again.');
+    }
+
+    setIsStreaming(false);
   };
 
   const suggestions = [
@@ -73,7 +158,7 @@ export default function CopilotPage() {
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Brain className="w-6 h-6 text-primary" /> AI Copilot</h1>
         <p className="text-sm text-muted-foreground">
           Ask questions about your financial data in plain English
-          {!isPremium && <span className="ml-2 text-warning">({FREE_MESSAGE_LIMIT - userMessageCount} free questions remaining)</span>}
+          {!isPremium && <span className="ml-2 text-warning">({Math.max(0, FREE_MESSAGE_LIMIT - userMessageCount)} free questions remaining)</span>}
         </p>
       </div>
 
@@ -102,7 +187,7 @@ export default function CopilotPage() {
             )}
           </motion.div>
         ))}
-        {isTyping && (
+        {isStreaming && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <Brain className="w-4 h-4 text-primary" />
@@ -142,7 +227,7 @@ export default function CopilotPage() {
             placeholder={!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT ? "Upgrade to continue asking..." : "Ask about your finances..."}
             disabled={!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT}
             className="flex-1 px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50" />
-          <button onClick={sendMessage} disabled={!input.trim() || isTyping || (!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT)}
+          <button onClick={sendMessage} disabled={!input.trim() || isStreaming || (!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT)}
             className="px-4 py-3 rounded-xl bg-primary text-primary-foreground disabled:opacity-50 hover:brightness-110 transition-all">
             <Send className="w-4 h-4" />
           </button>
