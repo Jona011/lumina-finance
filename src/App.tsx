@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FinancialProvider } from "@/context/FinancialContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import LandingPage from "./pages/LandingPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthPage from "./pages/AuthPage";
 import PricingPage from "./pages/PricingPage";
 import UploadPage from "./pages/UploadPage";
