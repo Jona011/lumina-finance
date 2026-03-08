@@ -9,6 +9,7 @@ import LandingPage from "./pages/LandingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthPage from "./pages/AuthPage";
 import PricingPage from "./pages/PricingPage";
+import PaymentPage from "./pages/PaymentPage";
 import UploadPage from "./pages/UploadPage";
 import DashboardLayout from "./components/DashboardLayout";
 import OverviewPage from "./pages/dashboard/OverviewPage";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
