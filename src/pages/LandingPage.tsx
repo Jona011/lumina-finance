@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Upload, Shield, Brain, BarChart3, Zap, TrendingUp, Target, LineChart, MessageSquare } from 'lucide-react';
+import { ArrowRight, Upload, Shield, Brain, BarChart3, Zap, TrendingUp, Target, LineChart, MessageSquare, Check } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
