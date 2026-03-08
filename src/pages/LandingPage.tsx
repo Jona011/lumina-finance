@@ -24,14 +24,19 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
+            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
           </div>
-          <button
-            onClick={() => navigate('/upload')}
-            className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all"
-          >
-            Get Started
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/auth')}
+              className="px-5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Sign In
+            </button>
+            <button onClick={() => navigate('/auth')}
+              className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all">
+              Get Started
+            </button>
+          </div>
         </div>
       </nav>
 
