@@ -18,24 +18,56 @@ const FREE_MESSAGE_LIMIT = 3;
 
 export default function CopilotPage() {
   const { user } = useAuth();
-  const { kpi, monthlyData, categoryBreakdown, insights } = useFinancial();
+  const { kpi, monthlyData, categoryBreakdown, insights, realData } = useFinancial();
   const isPremium = user?.plan === 'pro' || user?.plan === 'business';
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Hello! I'm your AI financial copilot. I've analyzed your uploaded data and I'm ready to answer any questions about your business finances. Try asking me about expenses, revenue trends, or cash flow projections." },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const userMessageCount = messages.filter(m => m.role === 'user').length;
+
+  // Load chat history on mount
+  useEffect(() => {
+    async function loadHistory() {
+      if (!user) {
+        setIsLoadingHistory(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (!error && data && data.length > 0) {
+        setMessages(data.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+      } else {
+        setMessages([
+          { role: 'assistant', content: "Hello! I'm your AI financial copilot. I've analyzed your uploaded data and I'm ready to answer any questions about your business finances. Try asking me about expenses, revenue trends, or cash flow projections." },
+        ]);
+      }
+      setIsLoadingHistory(false);
+    }
+    loadHistory();
+  }, [user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   // Build financial context string for the AI
-  const financialContext = `
-Revenue: $${kpi.revenue.value.toLocaleString()} (${kpi.revenue.change > 0 ? '+' : ''}${kpi.revenue.change}% change)
+  const financialContext = realData
+    ? `Revenue: $${realData.totalRevenue.toLocaleString()}
+Expenses: $${realData.totalExpenses.toLocaleString()}
+Profit: $${realData.totalProfit.toLocaleString()}
+
+Monthly Data: ${JSON.stringify(realData.monthlyData.slice(-6))}
+
+Top Expense Categories: ${realData.categoryBreakdown.map(c => `${c.name}: $${c.value.toLocaleString()} (${c.percentage}%)`).join(', ')}`
+    : `Revenue: $${kpi.revenue.value.toLocaleString()} (${kpi.revenue.change > 0 ? '+' : ''}${kpi.revenue.change}% change)
 Expenses: $${kpi.expenses.value.toLocaleString()} (${kpi.expenses.change > 0 ? '+' : ''}${kpi.expenses.change}% change)
 Profit: $${kpi.profit.value.toLocaleString()} (${kpi.profit.change > 0 ? '+' : ''}${kpi.profit.change}% change)
 Health Score: ${kpi.healthScore.value}/100
@@ -44,8 +76,7 @@ Monthly Data: ${JSON.stringify(monthlyData.slice(-6))}
 
 Top Expense Categories: ${categoryBreakdown.map(c => `${c.name}: $${c.value.toLocaleString()} (${c.percentage}%)`).join(', ')}
 
-Key Insights: ${insights.map(i => i.title + ': ' + i.description).join('; ')}
-  `.trim();
+Key Insights: ${insights.map(i => i.title + ': ' + i.description).join('; ')}`;
 
   const sendMessage = async () => {
     if (!input.trim() || isStreaming) return;
@@ -152,6 +183,14 @@ Key Insights: ${insights.map(i => i.title + ': ' + i.description).join('; ')}
     "Why did expenses increase recently?",
   ];
 
+  if (isLoadingHistory) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen">
       <div className="p-6 border-b border-border/50">
@@ -210,7 +249,7 @@ Key Insights: ${insights.map(i => i.title + ': ' + i.description).join('; ')}
         </PremiumGate>
       )}
 
-      {messages.length === 1 && (
+      {messages.length <= 1 && (
         <div className="px-6 pb-3 flex flex-wrap gap-2">
           {suggestions.map(s => (
             <button key={s} onClick={() => setInput(s)} className="px-3 py-1.5 rounded-full bg-secondary text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors">

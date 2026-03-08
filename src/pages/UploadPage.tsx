@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, CheckCircle, Brain, ArrowLeft, Lock } from 'lucide-react';
 import { useFinancial } from '@/context/FinancialContext';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { parseSpreadsheetFile, processFinancialData } from '@/lib/parseSpreadsheet';
 import UpgradeModal from '@/components/UpgradeModal';
+import { toast } from 'sonner';
 
 const processingSteps = [
   'Reading sheets...',
@@ -17,15 +20,15 @@ const processingSteps = [
 
 export default function UploadPage() {
   const navigate = useNavigate();
-  const { setHasData, setFileName, setIsProcessing: setGlobalProcessing } = useFinancial();
-  const { canUploadMore, incrementUploads } = useAuth();
+  const { setHasData, setFileName, setIsProcessing: setGlobalProcessing, setRealData, setRawData } = useFinancial();
+  const { user, canUploadMore, incrementUploads } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
-  const processFile = useCallback((f: File) => {
+  const processFile = useCallback(async (f: File) => {
     if (!canUploadMore()) {
       setShowUpgrade(true);
       return;
@@ -34,23 +37,62 @@ export default function UploadPage() {
     setIsProcessing(true);
     setGlobalProcessing(true);
     setCurrentStep(0);
-    incrementUploads();
 
-    let step = 0;
-    const interval = setInterval(() => {
-      step++;
-      if (step >= processingSteps.length) {
-        clearInterval(interval);
-        setFileName(f.name);
-        setHasData(true);
-        setIsProcessing(false);
-        setGlobalProcessing(false);
-        setTimeout(() => navigate('/dashboard'), 600);
-      } else {
-        setCurrentStep(step);
+    try {
+      // Step 1: Parse file
+      setCurrentStep(0);
+      const parsed = await parseSpreadsheetFile(f);
+
+      // Step 2: Identify columns
+      setCurrentStep(1);
+      await new Promise(r => setTimeout(r, 400));
+
+      // Step 3: Normalize
+      setCurrentStep(2);
+      await new Promise(r => setTimeout(r, 400));
+
+      // Step 4: Process data
+      setCurrentStep(3);
+      const processed = processFinancialData(parsed);
+      await new Promise(r => setTimeout(r, 400));
+
+      // Step 5: Build model
+      setCurrentStep(4);
+
+      // Save to database
+      if (user) {
+        const { error } = await supabase.from('spreadsheets').insert({
+          user_id: user.id,
+          file_name: f.name,
+          raw_data: parsed.rows as any,
+          processed_data: processed as any,
+        });
+        if (error) console.error('Save error:', error);
       }
-    }, 900);
-  }, [navigate, setFileName, setHasData, setGlobalProcessing, canUploadMore, incrementUploads]);
+
+      await new Promise(r => setTimeout(r, 400));
+
+      // Step 6: Generate insights
+      setCurrentStep(5);
+      await new Promise(r => setTimeout(r, 600));
+
+      // Apply data
+      setRealData(processed);
+      setRawData(parsed.rows as any);
+      setFileName(f.name);
+      setHasData(true);
+      incrementUploads();
+      setIsProcessing(false);
+      setGlobalProcessing(false);
+      toast.success('Spreadsheet processed successfully!');
+      setTimeout(() => navigate('/dashboard'), 600);
+    } catch (err) {
+      console.error('Parse error:', err);
+      toast.error('Failed to parse spreadsheet. Please check the file format.');
+      setIsProcessing(false);
+      setGlobalProcessing(false);
+    }
+  }, [navigate, setFileName, setHasData, setGlobalProcessing, setRealData, setRawData, canUploadMore, incrementUploads, user]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

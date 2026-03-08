@@ -23,8 +23,8 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
-    upgradePlan('pro');
     onClose();
+    navigate('/payment?plan=pro');
   };
 
   return (

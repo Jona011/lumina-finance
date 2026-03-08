@@ -133,8 +133,9 @@ export default function PricingPage() {
                 </div>
                 <button
                   onClick={() => {
-                    if (plan.planKey !== 'free') upgradePlan(plan.planKey);
-                    navigate(user ? '/dashboard' : '/auth');
+                    if (plan.planKey === 'free') return;
+                    if (!user) { navigate('/auth'); return; }
+                    navigate(`/payment?plan=${plan.planKey}`);
                   }}
                   disabled={user?.plan === plan.planKey}
                   className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${
