@@ -98,11 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const socialLogin = useCallback(async (provider: 'google' | 'apple') => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: window.location.origin + '/upload' },
+    const result = await lovable.auth.signInWithOAuth(provider, {
+      redirect_uri: window.location.origin + '/upload',
     });
-    if (error) throw error;
+    if (result.error) throw result.error;
   }, []);
 
   const logout = useCallback(async () => {
