@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useFinancial } from '@/context/FinancialContext';
 import { TrendingUp, TrendingDown, Minus, ArrowUpRight } from 'lucide-react';
+import PremiumGate from '@/components/PremiumGate';
 
 function ScoreRing({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 45;
@@ -43,51 +44,55 @@ export default function HealthScorePage() {
         <p className="text-sm text-muted-foreground mt-1">Your business is performing above average across key financial metrics</p>
       </div>
 
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold mb-4">Score Breakdown</h3>
-        <div className="space-y-4">
-          {healthScore.factors.map((f, i) => {
-            const Icon = trendIcon[f.trend];
-            const color = f.score >= 70 ? 'bg-accent' : f.score >= 40 ? 'bg-warning' : 'bg-destructive';
-            return (
-              <motion.div key={f.name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{f.name}</span>
-                    <Icon className={`w-3.5 h-3.5 ${f.trend === 'up' ? 'text-accent' : f.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`} />
+      <PremiumGate featureLabel="Full health score breakdown on Pro" blurIntensity="md">
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-semibold mb-4">Score Breakdown</h3>
+          <div className="space-y-4">
+            {healthScore.factors.map((f, i) => {
+              const Icon = trendIcon[f.trend];
+              const color = f.score >= 70 ? 'bg-accent' : f.score >= 40 ? 'bg-warning' : 'bg-destructive';
+              return (
+                <motion.div key={f.name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{f.name}</span>
+                      <Icon className={`w-3.5 h-3.5 ${f.trend === 'up' ? 'text-accent' : f.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`} />
+                    </div>
+                    <span className="text-sm font-semibold">{f.score}</span>
                   </div>
-                  <span className="text-sm font-semibold">{f.score}</span>
-                </div>
-                <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                  <motion.div className={`h-full rounded-full ${color}`}
-                    initial={{ width: 0 }} animate={{ width: `${f.score}%` }}
-                    transition={{ duration: 1, delay: i * 0.1 }} />
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Weight: {f.weight}%</p>
-              </motion.div>
-            );
-          })}
+                  <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <motion.div className={`h-full rounded-full ${color}`}
+                      initial={{ width: 0 }} animate={{ width: `${f.score}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Weight: {f.weight}%</p>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </PremiumGate>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="glass-card p-5 border-l-2 border-l-accent">
-          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-accent" /> What improves your score</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Consistent revenue growth over 4 months</li>
-            <li>• Strong profitability ratio at 40%</li>
-            <li>• Positive cash flow trajectory</li>
-          </ul>
+      <PremiumGate featureLabel="Improvement recommendations on Pro">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="glass-card p-5 border-l-2 border-l-accent">
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-accent" /> What improves your score</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• Consistent revenue growth over 4 months</li>
+              <li>• Strong profitability ratio at 40%</li>
+              <li>• Positive cash flow trajectory</li>
+            </ul>
+          </div>
+          <div className="glass-card p-5 border-l-2 border-l-destructive">
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><TrendingDown className="w-4 h-4 text-destructive" /> What hurts your score</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• Increasing expense volatility (+23%)</li>
+              <li>• High supplier concentration risk</li>
+              <li>• Customer revenue concentration (top 3 = 52%)</li>
+            </ul>
+          </div>
         </div>
-        <div className="glass-card p-5 border-l-2 border-l-destructive">
-          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><TrendingDown className="w-4 h-4 text-destructive" /> What hurts your score</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Increasing expense volatility (+23%)</li>
-            <li>• High supplier concentration risk</li>
-            <li>• Customer revenue concentration (top 3 = 52%)</li>
-          </ul>
-        </div>
-      </div>
+      </PremiumGate>
     </div>
   );
 }

@@ -1,13 +1,99 @@
-import { Settings } from 'lucide-react';
+import { Settings, User, CreditCard, Shield, BarChart3, LogOut, Crown } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import UpgradeModal from '@/components/UpgradeModal';
 
 export default function SettingsPage() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const isPremium = user?.plan === 'pro' || user?.plan === 'business';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-[800px]">
       <div>
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Settings className="w-6 h-6 text-primary" /> Settings</h1>
-        <p className="text-sm text-muted-foreground">Configure your workspace preferences</p>
+        <p className="text-sm text-muted-foreground">Manage your account and workspace</p>
       </div>
 
+      {/* Profile */}
+      <div className="glass-card p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Profile</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Name</span>
+            <span className="text-sm font-medium">{user?.name || 'Unknown'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Email</span>
+            <span className="text-sm font-medium">{user?.email || 'Unknown'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Login method</span>
+            <span className="px-3 py-1 rounded-full bg-secondary text-xs font-medium capitalize">{user?.authProvider || 'email'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Plan */}
+      <div className="glass-card p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Crown className="w-4 h-4 text-primary" /> Plan</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Current plan</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              isPremium ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'
+            }`}>
+              {user?.plan?.toUpperCase() || 'FREE'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Spreadsheet uploads</span>
+            <span className="text-sm font-medium">
+              {user?.spreadsheetsUsed || 0} of {user?.plan === 'free' ? user?.maxSpreadsheets : '∞'}
+            </span>
+          </div>
+          {!isPremium && (
+            <>
+              <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                <div className="h-full rounded-full bg-warning" style={{ width: `${((user?.spreadsheetsUsed || 0) / (user?.maxSpreadsheets || 1)) * 100}%` }} />
+              </div>
+              {(user?.spreadsheetsUsed || 0) >= (user?.maxSpreadsheets || 1) ? (
+                <p className="text-xs text-warning">You've reached your free upload limit. Upgrade to add more spreadsheets.</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">You have used {user?.spreadsheetsUsed || 0} of {user?.maxSpreadsheets || 1} free spreadsheet uploads</p>
+              )}
+              <button onClick={() => setShowUpgrade(true)}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all">
+                Upgrade to Pro
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Billing placeholder */}
+      <div className="glass-card p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> Billing</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Payment method</span>
+            <span className="text-sm text-muted-foreground/60">{isPremium ? 'Visa •••• 4242' : 'None'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Next billing date</span>
+            <span className="text-sm text-muted-foreground/60">{isPremium ? 'Apr 8, 2026' : '—'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Workspace */}
       {[
         { title: 'Currency', desc: 'Default currency for financial analysis', value: 'USD ($)' },
         { title: 'Date Format', desc: 'Preferred date format for display', value: 'MM/DD/YYYY' },
@@ -23,8 +109,9 @@ export default function SettingsPage() {
         </div>
       ))}
 
+      {/* Data & Privacy */}
       <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold mb-3">Data & Privacy</h3>
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-primary" /> Data & Privacy</h3>
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>• Your data is encrypted at rest and in transit</p>
           <p>• Files are processed securely and never shared with third parties</p>
@@ -34,6 +121,14 @@ export default function SettingsPage() {
           Delete All Data
         </button>
       </div>
+
+      {/* Logout */}
+      <button onClick={handleLogout}
+        className="w-full glass-card p-4 flex items-center justify-center gap-2 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors">
+        <LogOut className="w-4 h-4" /> Sign Out
+      </button>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );
 }

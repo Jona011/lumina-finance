@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Brain, User } from 'lucide-react';
+import PremiumGate from '@/components/PremiumGate';
+import { useAuth } from '@/context/AuthContext';
+import UpgradeModal from '@/components/UpgradeModal';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -22,13 +25,19 @@ function getResponse(msg: string): string {
   return sampleResponses['default'];
 }
 
+const FREE_MESSAGE_LIMIT = 3;
+
 export default function CopilotPage() {
+  const { user } = useAuth();
+  const isPremium = user?.plan === 'pro' || user?.plan === 'business';
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hello! I'm your AI financial copilot. I've analyzed your uploaded data and I'm ready to answer any questions about your business finances. Try asking me about expenses, revenue trends, or cash flow projections." },
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const userMessageCount = messages.filter(m => m.role === 'user').length;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,6 +45,10 @@ export default function CopilotPage() {
 
   const sendMessage = () => {
     if (!input.trim() || isTyping) return;
+    if (!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT) {
+      setShowUpgrade(true);
+      return;
+    }
     const userMsg = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
@@ -58,7 +71,10 @@ export default function CopilotPage() {
     <div className="flex flex-col h-screen">
       <div className="p-6 border-b border-border/50">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Brain className="w-6 h-6 text-primary" /> AI Copilot</h1>
-        <p className="text-sm text-muted-foreground">Ask questions about your financial data in plain English</p>
+        <p className="text-sm text-muted-foreground">
+          Ask questions about your financial data in plain English
+          {!isPremium && <span className="ml-2 text-warning">({FREE_MESSAGE_LIMIT - userMessageCount} free questions remaining)</span>}
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -101,10 +117,18 @@ export default function CopilotPage() {
         <div ref={bottomRef} />
       </div>
 
+      {!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT && (
+        <PremiumGate featureLabel="Full AI copilot access on Pro" blurIntensity="sm">
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Unlimited AI conversations available on Pro</p>
+          </div>
+        </PremiumGate>
+      )}
+
       {messages.length === 1 && (
         <div className="px-6 pb-3 flex flex-wrap gap-2">
           {suggestions.map(s => (
-            <button key={s} onClick={() => { setInput(s); }} className="px-3 py-1.5 rounded-full bg-secondary text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors">
+            <button key={s} onClick={() => setInput(s)} className="px-3 py-1.5 rounded-full bg-secondary text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors">
               {s}
             </button>
           ))}
@@ -115,14 +139,17 @@ export default function CopilotPage() {
         <div className="flex gap-3 max-w-3xl mx-auto">
           <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Ask about your finances..."
-            className="flex-1 px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
-          <button onClick={sendMessage} disabled={!input.trim() || isTyping}
+            placeholder={!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT ? "Upgrade to continue asking..." : "Ask about your finances..."}
+            disabled={!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT}
+            className="flex-1 px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50" />
+          <button onClick={sendMessage} disabled={!input.trim() || isTyping || (!isPremium && userMessageCount >= FREE_MESSAGE_LIMIT)}
             className="px-4 py-3 rounded-xl bg-primary text-primary-foreground disabled:opacity-50 hover:brightness-110 transition-all">
             <Send className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );
 }

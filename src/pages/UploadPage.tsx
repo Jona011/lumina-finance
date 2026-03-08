@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileSpreadsheet, CheckCircle, Brain, ArrowLeft } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, Brain, ArrowLeft, Lock } from 'lucide-react';
 import { useFinancial } from '@/context/FinancialContext';
+import { useAuth } from '@/context/AuthContext';
+import UpgradeModal from '@/components/UpgradeModal';
 
 const processingSteps = [
   'Reading sheets...',
@@ -16,16 +18,23 @@ const processingSteps = [
 export default function UploadPage() {
   const navigate = useNavigate();
   const { setHasData, setFileName, setIsProcessing: setGlobalProcessing } = useFinancial();
+  const { canUploadMore, incrementUploads } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const processFile = useCallback((f: File) => {
+    if (!canUploadMore()) {
+      setShowUpgrade(true);
+      return;
+    }
     setFile(f);
     setIsProcessing(true);
     setGlobalProcessing(true);
     setCurrentStep(0);
+    incrementUploads();
 
     let step = 0;
     const interval = setInterval(() => {
@@ -41,7 +50,7 @@ export default function UploadPage() {
         setCurrentStep(step);
       }
     }, 900);
-  }, [navigate, setFileName, setHasData, setGlobalProcessing]);
+  }, [navigate, setFileName, setHasData, setGlobalProcessing, canUploadMore, incrementUploads]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -54,6 +63,8 @@ export default function UploadPage() {
     const f = e.target.files?.[0];
     if (f) processFile(f);
   }, [processFile]);
+
+  const canUpload = canUploadMore();
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 relative">
@@ -77,27 +88,41 @@ export default function UploadPage() {
         <AnimatePresence mode="wait">
           {!isProcessing ? (
             <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                className={`glass-card p-12 text-center cursor-pointer transition-all duration-300 ${isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'hover:border-primary/30'}`}
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
-                <Upload className={`w-12 h-12 mx-auto mb-4 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
-                <p className="text-lg font-medium mb-2">Drop your spreadsheet here</p>
-                <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-                <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
-                  <span className="px-3 py-1 rounded-full bg-secondary">.xlsx</span>
-                  <span className="px-3 py-1 rounded-full bg-secondary">.csv</span>
-                  <span className="px-3 py-1 rounded-full bg-secondary">.xls</span>
+              {!canUpload ? (
+                <div className="glass-card p-12 text-center border border-warning/30">
+                  <Lock className="w-12 h-12 mx-auto mb-4 text-warning" />
+                  <p className="text-lg font-medium mb-2">Upload limit reached</p>
+                  <p className="text-sm text-muted-foreground mb-6">You've reached your free upload limit. Upgrade to add more spreadsheets.</p>
+                  <button onClick={() => setShowUpgrade(true)}
+                    className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 transition-all glow-primary">
+                    Upgrade to Pro
+                  </button>
                 </div>
-                <input id="file-input" type="file" accept=".xlsx,.csv,.xls" className="hidden" onChange={handleFileSelect} />
-              </div>
-              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-                <CheckCircle className="w-3.5 h-3.5 text-accent" />
-                Your files are encrypted and processed securely
-              </div>
+              ) : (
+                <>
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`glass-card p-12 text-center cursor-pointer transition-all duration-300 ${isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'hover:border-primary/30'}`}
+                    onClick={() => document.getElementById('file-input')?.click()}
+                  >
+                    <Upload className={`w-12 h-12 mx-auto mb-4 transition-colors ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <p className="text-lg font-medium mb-2">Drop your spreadsheet here</p>
+                    <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
+                    <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
+                      <span className="px-3 py-1 rounded-full bg-secondary">.xlsx</span>
+                      <span className="px-3 py-1 rounded-full bg-secondary">.csv</span>
+                      <span className="px-3 py-1 rounded-full bg-secondary">.xls</span>
+                    </div>
+                    <input id="file-input" type="file" accept=".xlsx,.csv,.xls" className="hidden" onChange={handleFileSelect} />
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                    <CheckCircle className="w-3.5 h-3.5 text-accent" />
+                    Your files are encrypted and processed securely
+                  </div>
+                </>
+              )}
             </motion.div>
           ) : (
             <motion.div key="processing" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -133,6 +158,8 @@ export default function UploadPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );
 }

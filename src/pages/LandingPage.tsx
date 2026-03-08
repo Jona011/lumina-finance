@@ -179,7 +179,7 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to understand your finances?</h2>
           <p className="text-muted-foreground mb-8">Upload a spreadsheet and get CFO-level insights in seconds.</p>
           <button
-            onClick={() => navigate('/upload')}
+            onClick={() => navigate('/auth')}
             className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base flex items-center gap-2 mx-auto hover:brightness-110 transition-all glow-primary"
           >
             <Upload className="w-5 h-5" /> Start Free Analysis
