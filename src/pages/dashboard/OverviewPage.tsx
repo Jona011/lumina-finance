@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useFinancial } from '@/context/FinancialContext';
 import { ArrowUpRight, ArrowDownRight, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import PremiumGate from '@/components/PremiumGate';
 
 function KPICard({ label, value, change, prefix, suffix }: { label: string; value: number; change: number; prefix?: string; suffix?: string }) {
   const isPositive = change >= 0;
@@ -43,17 +44,21 @@ export default function OverviewPage() {
         <p className="text-sm text-muted-foreground">Your business performance at a glance</p>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs - first 2 visible, last 2 gated */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard {...kpi.revenue} />
         <KPICard {...kpi.expenses} />
-        <KPICard {...kpi.profit} />
-        <KPICard {...kpi.healthScore} />
+        <PremiumGate featureLabel="Upgrade to see full metrics">
+          <KPICard {...kpi.profit} />
+        </PremiumGate>
+        <PremiumGate featureLabel="Upgrade to see health score">
+          <KPICard {...kpi.healthScore} />
+        </PremiumGate>
       </div>
 
-      {/* AI Insights strip */}
+      {/* AI Insights strip - first 2 visible, rest gated */}
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {insights.slice(0, 4).map((ins, i) => (
+        {insights.slice(0, 2).map((ins, i) => (
           <motion.div key={ins.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
             className={`glass-card p-4 min-w-[280px] shrink-0 border-l-2 ${
               ins.type === 'growth' ? 'border-l-accent' : ins.type === 'risk' ? 'border-l-destructive' : ins.type === 'optimization' ? 'border-l-warning' : 'border-l-primary'
@@ -66,9 +71,23 @@ export default function OverviewPage() {
             <p className="text-xs text-muted-foreground">{ins.description}</p>
           </motion.div>
         ))}
+        <PremiumGate featureLabel="Premium insights available on Pro" blurIntensity="sm">
+          <div className="flex gap-4">
+            {insights.slice(2, 4).map((ins) => (
+              <div key={ins.id} className={`glass-card p-4 min-w-[280px] shrink-0 border-l-2 border-l-primary`}>
+                <div className="flex items-start justify-between mb-2">
+                  <span className="text-lg">{ins.icon}</span>
+                  <span className="text-[10px] text-muted-foreground">{ins.confidence}% confidence</span>
+                </div>
+                <p className="text-sm font-medium mb-1">{ins.title}</p>
+                <p className="text-xs text-muted-foreground">{ins.description}</p>
+              </div>
+            ))}
+          </div>
+        </PremiumGate>
       </div>
 
-      {/* Charts */}
+      {/* Charts - main chart visible, pie gated */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 glass-card p-5">
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Revenue vs Expenses</h3>
@@ -94,43 +113,47 @@ export default function OverviewPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="glass-card p-5">
-          <h3 className="text-sm font-semibold mb-4">Expense Breakdown</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={categoryBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3}>
-                {categoryBreakdown.map((c, i) => <Cell key={i} fill={c.color} />)}
-              </Pie>
-              <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-2">
-            {categoryBreakdown.slice(0, 4).map(c => (
-              <div key={c.name} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
-                  <span>{c.name}</span>
+        <PremiumGate featureLabel="Full breakdown on Pro">
+          <div className="glass-card p-5">
+            <h3 className="text-sm font-semibold mb-4">Expense Breakdown</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={categoryBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3}>
+                  {categoryBreakdown.map((c, i) => <Cell key={i} fill={c.color} />)}
+                </Pie>
+                <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-2 mt-2">
+              {categoryBreakdown.slice(0, 4).map(c => (
+                <div key={c.name} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    <span>{c.name}</span>
+                  </div>
+                  <span className="text-muted-foreground">{c.percentage}%</span>
                 </div>
-                <span className="text-muted-foreground">{c.percentage}%</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        </PremiumGate>
       </div>
 
-      {/* Profit trend */}
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold mb-4">Net Profit Trend</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={monthlyData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,20%)" />
-            <XAxis dataKey="month" stroke="hsl(215,20%,55%)" fontSize={12} />
-            <YAxis stroke="hsl(215,20%,55%)" fontSize={12} tickFormatter={(v) => `$${v/1000}k`} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="profit" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} name="Profit" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {/* Profit trend - gated */}
+      <PremiumGate featureLabel="Profit trend available on Pro">
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-semibold mb-4">Net Profit Trend</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthlyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,20%)" />
+              <XAxis dataKey="month" stroke="hsl(215,20%,55%)" fontSize={12} />
+              <YAxis stroke="hsl(215,20%,55%)" fontSize={12} tickFormatter={(v) => `$${v/1000}k`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="profit" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} name="Profit" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </PremiumGate>
     </div>
   );
 }

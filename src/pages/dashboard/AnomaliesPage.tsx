@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useFinancial } from '@/context/FinancialContext';
 import { AlertTriangle, AlertCircle, Info, ChevronRight } from 'lucide-react';
+import PremiumGate from '@/components/PremiumGate';
 
 const severityConfig = {
   high: { icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
@@ -31,8 +32,9 @@ export default function AnomaliesPage() {
         })}
       </div>
 
+      {/* Show first 2 anomalies, gate the rest */}
       <div className="space-y-4">
-        {anomalies.map((anomaly, i) => {
+        {anomalies.slice(0, 2).map((anomaly, i) => {
           const cfg = severityConfig[anomaly.severity];
           const Icon = cfg.icon;
           return (
@@ -63,6 +65,28 @@ export default function AnomaliesPage() {
           );
         })}
       </div>
+
+      <PremiumGate featureLabel="Full anomaly detection available on Pro" blurIntensity="md">
+        <div className="space-y-4">
+          {anomalies.slice(2).map((anomaly, i) => {
+            const cfg = severityConfig[anomaly.severity];
+            const Icon = cfg.icon;
+            return (
+              <div key={anomaly.id} className={`glass-card p-5 border ${cfg.border}`}>
+                <div className="flex items-start gap-4">
+                  <div className={`w-10 h-10 rounded-lg ${cfg.bg} flex items-center justify-center shrink-0`}>
+                    <Icon className={`w-5 h-5 ${cfg.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm">{anomaly.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{anomaly.description}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </PremiumGate>
     </div>
   );
 }

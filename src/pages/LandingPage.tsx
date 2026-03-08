@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Upload, Shield, Brain, BarChart3, Zap, TrendingUp, Target, LineChart, MessageSquare } from 'lucide-react';
+import { ArrowRight, Upload, Shield, Brain, BarChart3, Zap, TrendingUp, Target, LineChart, MessageSquare, Check } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -24,14 +24,19 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
+            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="#security" className="hover:text-foreground transition-colors">Security</a>
           </div>
-          <button
-            onClick={() => navigate('/upload')}
-            className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all"
-          >
-            Get Started
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/auth')}
+              className="px-5 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Sign In
+            </button>
+            <button onClick={() => navigate('/auth')}
+              className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all">
+              Get Started
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -58,16 +63,16 @@ export default function LandingPage() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}
             className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => navigate('/upload')}
+              onClick={() => navigate('/auth')}
               className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base flex items-center gap-2 hover:brightness-110 transition-all glow-primary"
             >
-              <Upload className="w-5 h-5" /> Upload Financial Data
+              <Upload className="w-5 h-5" /> Start Free Analysis
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/pricing')}
               className="px-8 py-3.5 rounded-xl bg-secondary text-secondary-foreground font-semibold text-base flex items-center gap-2 hover:bg-secondary/80 transition-all border border-border"
             >
-              Try the Demo <ArrowRight className="w-4 h-4" />
+              View Pricing <ArrowRight className="w-4 h-4" />
             </button>
           </motion.div>
         </div>
@@ -125,6 +130,33 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="py-24 px-6 border-t border-border/50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto mb-10">Start free. Upgrade when you need the full power of AI financial intelligence.</p>
+          <div className="grid md:grid-cols-3 gap-6 text-left">
+            {[
+              { name: 'Free', price: '$0', features: ['1 spreadsheet', 'Partial analysis', 'Limited insights'] },
+              { name: 'Pro', price: '$29/mo', features: ['Unlimited uploads', 'Full AI copilot', 'Forecasting', 'Reports & exports'], highlight: true },
+              { name: 'Business', price: '$79/mo', features: ['Everything in Pro', 'Team workspace', 'Priority support'] },
+            ].map(plan => (
+              <div key={plan.name} className={`glass-card p-6 ${plan.highlight ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
+                <h3 className="font-semibold mb-1">{plan.name}</h3>
+                <p className="text-2xl font-extrabold mb-4">{plan.price}</p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {plan.features.map(f => <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-accent" /> {f}</li>)}
+                </ul>
+                <button onClick={() => navigate(plan.highlight ? '/auth' : '/pricing')}
+                  className={`w-full mt-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${plan.highlight ? 'bg-primary text-primary-foreground hover:brightness-110' : 'bg-secondary text-foreground hover:bg-secondary/80'}`}>
+                  {plan.highlight ? 'Get Started' : 'Learn More'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Security */}
       <section id="security" className="py-24 px-6 border-t border-border/50">
         <div className="max-w-4xl mx-auto text-center">
@@ -147,7 +179,7 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to understand your finances?</h2>
           <p className="text-muted-foreground mb-8">Upload a spreadsheet and get CFO-level insights in seconds.</p>
           <button
-            onClick={() => navigate('/upload')}
+            onClick={() => navigate('/auth')}
             className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base flex items-center gap-2 mx-auto hover:brightness-110 transition-all glow-primary"
           >
             <Upload className="w-5 h-5" /> Start Free Analysis

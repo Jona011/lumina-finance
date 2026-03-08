@@ -1,5 +1,9 @@
 import { motion } from 'framer-motion';
 import { FileText, Download, Share2 } from 'lucide-react';
+import PremiumGate from '@/components/PremiumGate';
+import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
+import UpgradeModal from '@/components/UpgradeModal';
 
 const reports = [
   { title: 'Executive Summary', desc: 'High-level overview of financial performance, key metrics, and strategic recommendations.', type: 'AI-Generated' },
@@ -10,6 +14,10 @@ const reports = [
 ];
 
 export default function ReportsPage() {
+  const { user } = useAuth();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const isPremium = user?.plan === 'pro' || user?.plan === 'business';
+
   return (
     <div className="p-6 space-y-6 max-w-[1000px]">
       <div>
@@ -36,27 +44,33 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
-                <Download className="w-4 h-4 text-muted-foreground" />
+              <button onClick={() => !isPremium && setShowUpgrade(true)}
+                className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
+                <Download className={`w-4 h-4 ${isPremium ? 'text-muted-foreground' : 'text-muted-foreground/40'}`} />
               </button>
-              <button className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
-                <Share2 className="w-4 h-4 text-muted-foreground" />
+              <button onClick={() => !isPremium && setShowUpgrade(true)}
+                className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
+                <Share2 className={`w-4 h-4 ${isPremium ? 'text-muted-foreground' : 'text-muted-foreground/40'}`} />
               </button>
             </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold mb-3">Export Formats</h3>
-        <div className="flex flex-wrap gap-3">
-          {['PDF Report', 'CSV Data', 'Excel Workbook', 'Share Link'].map(f => (
-            <button key={f} className="px-4 py-2 rounded-lg bg-secondary text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors border border-border">
-              {f}
-            </button>
-          ))}
+      <PremiumGate featureLabel="Report exports available on Pro">
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-semibold mb-3">Export Formats</h3>
+          <div className="flex flex-wrap gap-3">
+            {['PDF Report', 'CSV Data', 'Excel Workbook', 'Share Link'].map(f => (
+              <button key={f} className="px-4 py-2 rounded-lg bg-secondary text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors border border-border">
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </PremiumGate>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );
 }
