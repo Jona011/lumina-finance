@@ -1,4 +1,4 @@
-import { Settings, User, CreditCard, Shield, BarChart3, LogOut, Crown } from 'lucide-react';
+import { Settings, User, CreditCard, Shield, Crown, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -16,13 +16,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[800px]">
+    <div className="p-6 lg:p-8 space-y-6 max-w-[800px]">
       <div>
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Settings className="w-6 h-6 text-primary" /> Settings</h1>
         <p className="text-sm text-muted-foreground">Manage your account and workspace</p>
       </div>
 
-      {/* Profile */}
       <div className="glass-card p-5">
         <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Profile</h3>
         <div className="space-y-3">
@@ -36,20 +35,23 @@ export default function SettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Login method</span>
-            <span className="px-3 py-1 rounded-full bg-secondary text-xs font-medium capitalize">{user?.authProvider || 'email'}</span>
+            <span className="px-3 py-1 rounded-full bg-muted text-xs font-medium capitalize">{user?.authProvider || 'email'}</span>
           </div>
+          {user?.isAdmin && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Role</span>
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">ADMIN</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Plan */}
       <div className="glass-card p-5">
         <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Crown className="w-4 h-4 text-primary" /> Plan</h3>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Current plan</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              isPremium ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground'
-            }`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isPremium ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
               {user?.plan?.toUpperCase() || 'FREE'}
             </span>
           </div>
@@ -61,16 +63,11 @@ export default function SettingsPage() {
           </div>
           {!isPremium && (
             <>
-              <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                <div className="h-full rounded-full bg-warning" style={{ width: `${((user?.spreadsheetsUsed || 0) / (user?.maxSpreadsheets || 1)) * 100}%` }} />
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${((user?.spreadsheetsUsed || 0) / (user?.maxSpreadsheets || 1)) * 100}%` }} />
               </div>
-              {(user?.spreadsheetsUsed || 0) >= (user?.maxSpreadsheets || 1) ? (
-                <p className="text-xs text-warning">You've reached your free upload limit. Upgrade to add more spreadsheets.</p>
-              ) : (
-                <p className="text-xs text-muted-foreground">You have used {user?.spreadsheetsUsed || 0} of {user?.maxSpreadsheets || 1} free spreadsheet uploads</p>
-              )}
               <button onClick={() => setShowUpgrade(true)}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all">
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all shadow-lg shadow-primary/20">
                 Upgrade to Pro
               </button>
             </>
@@ -78,7 +75,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Billing placeholder */}
       <div className="glass-card p-5">
         <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> Billing</h3>
         <div className="space-y-3">
@@ -93,36 +89,33 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Workspace */}
       {[
-        { title: 'Currency', desc: 'Default currency for financial analysis', value: 'USD ($)' },
-        { title: 'Date Format', desc: 'Preferred date format for display', value: 'MM/DD/YYYY' },
+        { title: 'Currency', desc: 'Default currency', value: 'USD ($)' },
+        { title: 'Date Format', desc: 'Preferred date format', value: 'MM/DD/YYYY' },
         { title: 'Fiscal Year Start', desc: 'When your fiscal year begins', value: 'January' },
-        { title: 'Industry', desc: 'Used for benchmark comparisons', value: 'Technology / SaaS' },
+        { title: 'Industry', desc: 'For benchmark comparisons', value: 'Technology / SaaS' },
       ].map(item => (
         <div key={item.title} className="glass-card p-5 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">{item.title}</p>
             <p className="text-xs text-muted-foreground">{item.desc}</p>
           </div>
-          <span className="px-3 py-1.5 rounded-lg bg-secondary text-sm text-muted-foreground">{item.value}</span>
+          <span className="px-3 py-1.5 rounded-xl bg-muted text-sm text-muted-foreground">{item.value}</span>
         </div>
       ))}
 
-      {/* Data & Privacy */}
       <div className="glass-card p-5">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-primary" /> Data & Privacy</h3>
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>• Your data is encrypted at rest and in transit</p>
-          <p>• Files are processed securely and never shared with third parties</p>
+          <p>• Files are processed securely and never shared</p>
           <p>• You can delete all uploaded data at any time</p>
         </div>
-        <button className="mt-4 px-4 py-2 rounded-lg bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors">
+        <button className="mt-4 px-4 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors">
           Delete All Data
         </button>
       </div>
 
-      {/* Logout */}
       <button onClick={handleLogout}
         className="w-full glass-card p-4 flex items-center justify-center gap-2 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors">
         <LogOut className="w-4 h-4" /> Sign Out

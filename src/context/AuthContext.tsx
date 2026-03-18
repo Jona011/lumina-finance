@@ -13,6 +13,7 @@ interface UserProfile {
   spreadsheetsUsed: number;
   maxSpreadsheets: number;
   authProvider: string;
+  isAdmin: boolean;
 }
 
 interface AuthState {
@@ -32,7 +33,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-function mapSupabaseUser(su: SupabaseUser, profile?: any): UserProfile {
+function mapSupabaseUser(su: SupabaseUser, profile?: any, isAdmin?: boolean): UserProfile {
   return {
     id: su.id,
     name: profile?.full_name || su.user_metadata?.full_name || su.user_metadata?.name || su.email?.split('@')[0] || '',
@@ -41,6 +42,7 @@ function mapSupabaseUser(su: SupabaseUser, profile?: any): UserProfile {
     spreadsheetsUsed: profile?.spreadsheets_used ?? 0,
     maxSpreadsheets: profile?.max_spreadsheets ?? 1,
     authProvider: su.app_metadata?.provider || 'email',
+    isAdmin: isAdmin ?? false,
   };
 }
 
@@ -49,18 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = useCallback(async (su: SupabaseUser) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', su.id)
-      .single();
-    setUser(mapSupabaseUser(su, data));
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('user_id', su.id).single(),
+      supabase.from('user_roles').select('role').eq('user_id', su.id),
+    ]);
+    const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
+    setUser(mapSupabaseUser(su, profile, isAdmin));
   }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Use setTimeout to avoid Supabase deadlock during callback
         setTimeout(() => fetchProfile(session.user), 0);
       } else {
         setUser(null);
