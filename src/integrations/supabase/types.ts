@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          response_time_ms: number | null
+          status: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          response_time_ms?: number | null
+          status: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          response_time_ms?: number | null
+          status?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
