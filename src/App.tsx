@@ -21,6 +21,12 @@ import ReportsPage from "./pages/dashboard/ReportsPage";
 import DataQualityPage from "./pages/dashboard/DataQualityPage";
 import CopilotPage from "./pages/dashboard/CopilotPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import UsersPage from "./pages/admin/UsersPage";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
+import ContentModerationPage from "./pages/admin/ContentModerationPage";
+import ApiLogsPage from "./pages/admin/ApiLogsPage";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +34,13 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  if (!user?.isAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -56,6 +69,14 @@ const App = () => (
                 <Route path="data-quality" element={<DataQualityPage />} />
                 <Route path="copilot" element={<CopilotPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="/admin" element={<AdminRoute><DashboardLayout isAdmin /></AdminRoute>}>
+                <Route index element={<AdminDashboardPage />} />
+                <Route path="users" element={<UsersPage />} />
+                <Route path="analytics" element={<AdminAnalyticsPage />} />
+                <Route path="content" element={<ContentModerationPage />} />
+                <Route path="api-logs" element={<ApiLogsPage />} />
+                <Route path="settings" element={<AdminSettingsPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

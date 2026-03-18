@@ -13,7 +13,7 @@ function KPICard({ label, value, change, prefix, suffix }: { label: string; valu
         <p className="text-2xl font-bold">
           {prefix}{value.toLocaleString()}{suffix}
         </p>
-        <span className={`flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded-full ${isPositive ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
+        <span className={`flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded-full ${isPositive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
           {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
           {Math.abs(change)}%
         </span>
@@ -38,13 +38,12 @@ export default function OverviewPage() {
   const { kpi, monthlyData, categoryBreakdown, insights } = useFinancial();
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
+    <div className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
       <div>
         <h1 className="text-2xl font-bold mb-1">Financial Overview</h1>
         <p className="text-sm text-muted-foreground">Your business performance at a glance</p>
       </div>
 
-      {/* KPIs - first 2 visible, last 2 gated */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard {...kpi.revenue} />
         <KPICard {...kpi.expenses} />
@@ -56,12 +55,11 @@ export default function OverviewPage() {
         </PremiumGate>
       </div>
 
-      {/* AI Insights strip - first 2 visible, rest gated */}
       <div className="flex gap-4 overflow-x-auto pb-2">
         {insights.slice(0, 2).map((ins, i) => (
           <motion.div key={ins.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className={`glass-card p-4 min-w-[280px] shrink-0 border-l-2 ${
-              ins.type === 'growth' ? 'border-l-accent' : ins.type === 'risk' ? 'border-l-destructive' : ins.type === 'optimization' ? 'border-l-warning' : 'border-l-primary'
+            className={`glass-card p-4 min-w-[280px] shrink-0 border-l-4 ${
+              ins.type === 'growth' ? 'border-l-success' : ins.type === 'risk' ? 'border-l-destructive' : ins.type === 'optimization' ? 'border-l-warning' : 'border-l-primary'
             }`}>
             <div className="flex items-start justify-between mb-2">
               <span className="text-lg">{ins.icon}</span>
@@ -74,7 +72,7 @@ export default function OverviewPage() {
         <PremiumGate featureLabel="Premium insights available on Pro" blurIntensity="sm">
           <div className="flex gap-4">
             {insights.slice(2, 4).map((ins) => (
-              <div key={ins.id} className={`glass-card p-4 min-w-[280px] shrink-0 border-l-2 border-l-primary`}>
+              <div key={ins.id} className={`glass-card p-4 min-w-[280px] shrink-0 border-l-4 border-l-primary`}>
                 <div className="flex items-start justify-between mb-2">
                   <span className="text-lg">{ins.icon}</span>
                   <span className="text-[10px] text-muted-foreground">{ins.confidence}% confidence</span>
@@ -87,7 +85,6 @@ export default function OverviewPage() {
         </PremiumGate>
       </div>
 
-      {/* Charts - main chart visible, pie gated */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 glass-card p-5">
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Revenue vs Expenses</h3>
@@ -95,20 +92,20 @@ export default function OverviewPage() {
             <AreaChart data={monthlyData}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(239,84%,67%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(239,84%,67%)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(258,70%,55%)" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="hsl(258,70%,55%)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(0,84%,60%)" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="hsl(0,84%,60%)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(280,65%,60%)" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="hsl(280,65%,60%)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,20%)" />
-              <XAxis dataKey="month" stroke="hsl(215,20%,55%)" fontSize={12} />
-              <YAxis stroke="hsl(215,20%,55%)" fontSize={12} tickFormatter={(v) => `$${v/1000}k`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(252,20%,90%)" />
+              <XAxis dataKey="month" stroke="hsl(240,10%,46%)" fontSize={12} />
+              <YAxis stroke="hsl(240,10%,46%)" fontSize={12} tickFormatter={(v) => `$${v/1000}k`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revenue" stroke="hsl(239,84%,67%)" fill="url(#revGrad)" strokeWidth={2} name="Revenue" />
-              <Area type="monotone" dataKey="expenses" stroke="hsl(0,84%,60%)" fill="url(#expGrad)" strokeWidth={2} name="Expenses" />
+              <Area type="monotone" dataKey="revenue" stroke="hsl(258,70%,55%)" fill="url(#revGrad)" strokeWidth={2} name="Revenue" />
+              <Area type="monotone" dataKey="expenses" stroke="hsl(280,65%,60%)" fill="url(#expGrad)" strokeWidth={2} name="Expenses" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -139,17 +136,16 @@ export default function OverviewPage() {
         </PremiumGate>
       </div>
 
-      {/* Profit trend - gated */}
       <PremiumGate featureLabel="Profit trend available on Pro">
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">Net Profit Trend</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,20%)" />
-              <XAxis dataKey="month" stroke="hsl(215,20%,55%)" fontSize={12} />
-              <YAxis stroke="hsl(215,20%,55%)" fontSize={12} tickFormatter={(v) => `$${v/1000}k`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(252,20%,90%)" />
+              <XAxis dataKey="month" stroke="hsl(240,10%,46%)" fontSize={12} />
+              <YAxis stroke="hsl(240,10%,46%)" fontSize={12} tickFormatter={(v) => `$${v/1000}k`} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="profit" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} name="Profit" />
+              <Bar dataKey="profit" fill="hsl(142,71%,45%)" radius={[6, 6, 0, 0]} name="Profit" />
             </BarChart>
           </ResponsiveContainer>
         </div>
